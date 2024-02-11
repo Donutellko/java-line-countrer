@@ -100,6 +100,8 @@ public class LineCounter {
                         state = State.LINE_BEGIN;
                     } else if (is(STAR)) {
                         state = State.INSIDE_MULTI_LINE_COMMENT_NO_CODE_BEFORE;
+                    } else if (is(SLASH)) {
+                        state = State.INSIDE_SINGLE_LINE_COMMENT;
                     } else {
                         state = State.LINE_WITH_CODE;
                     }

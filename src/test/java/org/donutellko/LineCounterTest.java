@@ -98,7 +98,14 @@ class LineCounterTest {
                 / 
                 2;
                 i--;
+                """),
+            Arguments.arguments(2, "multiline comment opens inside single-line comment", """
+                // /*
+                int a = 25;
+                int b = 25;
+                // */
                 """)
+
         );
     }
 }
