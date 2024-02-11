@@ -123,6 +123,12 @@ class LineCounterTest {
                 *
                 /*/
                 int b = 25;
+                """),
+            Arguments.arguments(2, "division after multiline comment", """
+                i = 4
+                /*/
+                i++;
+                 *// 2;
                 """)
 
         );

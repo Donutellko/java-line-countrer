@@ -17,7 +17,8 @@ public class LineCounter {
     private Character cur = null;
     private State state = State.LINE_BEGIN;
     private boolean verboseLogging = false;
-    private Integer commentStartPos = null;
+    private Integer multilineCommentStartPos = null;
+    private Integer multilineCommentEndPos = null;
 
     public LineCounter(String code) {
         this.code = code.toCharArray();
@@ -43,7 +44,9 @@ public class LineCounter {
                     } else if (isWhitespace()) {
                         break;
                     } else if (was(SLASH) && is(SLASH)) {
-                        setState(State.INSIDE_SINGLE_LINE_COMMENT);
+                        if (canStartSingleLineComment()) {
+                            setState(State.INSIDE_SINGLE_LINE_COMMENT);
+                        }
                     } else if (was(SLASH) && is(STAR)) {
                         setState(State.INSIDE_MULTI_LINE_COMMENT_NO_CODE_BEFORE);
                     } else if (is(SLASH)) {
@@ -69,7 +72,9 @@ public class LineCounter {
                     if (isNewline()) {
                         setState(State.LINE_BEGIN);
                     } else if (was(SLASH) && is(SLASH)) {
-                        setState(State.INSIDE_SINGLE_LINE_COMMENT);
+                        if (canStartSingleLineComment()) {
+                            setState(State.INSIDE_SINGLE_LINE_COMMENT);
+                        }
                     } else if (was(SLASH) && is(STAR)) {
                         setState(State.INSIDE_MULTI_LINE_COMMENT_WITH_CODE_BEFORE);
                     } else if (was(SINGLE_QUOTE) && is(DOUBLE_QUOTE)) {
@@ -85,7 +90,7 @@ public class LineCounter {
                 }
                 case INSIDE_MULTI_LINE_COMMENT_NO_CODE_BEFORE -> {
                     if (was(STAR) && is(SLASH)) {
-                        if (commentStartPos < pos - 1) { // for situation with /*/
+                        if (canEndMultilineComment()) {
                             setState(State.LINE_BEGIN);
                         }
                     }
@@ -94,7 +99,7 @@ public class LineCounter {
                     if (isNewline()) {
                         setState(State.INSIDE_MULTI_LINE_COMMENT_NO_CODE_BEFORE);
                     } else if (was(STAR) && is(SLASH)) {
-                        if (commentStartPos < pos - 1) { // for situation with /*/
+                        if (canEndMultilineComment()) { // for situation with /*/
                             setState(State.LINE_WITH_CODE);
                         }
                     }
@@ -106,11 +111,14 @@ public class LineCounter {
                     } else if (is(STAR)) {
                         setState(State.INSIDE_MULTI_LINE_COMMENT_NO_CODE_BEFORE);
                     } else if (is(SLASH)) {
-                        setState(State.INSIDE_SINGLE_LINE_COMMENT);
+                        if (canStartSingleLineComment()) {
+                            setState(State.INSIDE_SINGLE_LINE_COMMENT);
+                        }
                     } else {
                         setState(State.LINE_WITH_CODE);
                     }
                 }
+                default -> throw new IllegalStateException("Forgot to define " + this.state);
             }
             if (verboseLogging) {
                 print();
@@ -120,11 +128,30 @@ public class LineCounter {
     }
 
     private void setState(State state) {
-        if (state == State.INSIDE_MULTI_LINE_COMMENT_NO_CODE_BEFORE
-            || state == State.INSIDE_MULTI_LINE_COMMENT_WITH_CODE_BEFORE) {
-            commentStartPos = pos;
+        if (isMultilineComment(state)) {
+            multilineCommentStartPos = pos;
+        } else if (isMultilineComment(this.state)) {
+            multilineCommentEndPos = pos;
         }
         this.state = state;
+    }
+
+    private static boolean isMultilineComment(State state) {
+        return state == State.INSIDE_MULTI_LINE_COMMENT_NO_CODE_BEFORE
+            || state == State.INSIDE_MULTI_LINE_COMMENT_WITH_CODE_BEFORE;
+    }
+
+    private boolean canEndMultilineComment() {
+        // for situation with /*/
+        return multilineCommentStartPos == null
+            || multilineCommentStartPos != pos - 1;
+    }
+
+    private boolean canStartSingleLineComment() {
+        // for situation with i = 4 /* *// 2;
+        System.out.printf("pos = %s, multilineCommentEndPos = %s %n", pos, multilineCommentEndPos);
+        return multilineCommentEndPos == null
+            || multilineCommentEndPos != pos - 1;
     }
 
     private void print() {
