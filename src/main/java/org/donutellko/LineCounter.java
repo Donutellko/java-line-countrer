@@ -16,9 +16,14 @@ public class LineCounter {
     private Character prev = null;
     private Character cur = null;
     private State state = State.LINE_BEGIN;
+    private boolean verboseLogging = false;
 
     public LineCounter(String code) {
         this.code = code.toCharArray();
+    }
+
+    public void enableLogging() {
+        verboseLogging = true;
     }
 
     public int count() {
@@ -100,7 +105,9 @@ public class LineCounter {
                     }
                 }
             }
-            print();
+            if (verboseLogging) {
+                print();
+            }
         } while (next());
         return count;
     }

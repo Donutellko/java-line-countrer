@@ -14,10 +14,12 @@ class LineCounterTest {
     @MethodSource("testSource")
     @DisplayName("$testName")
     void test(int expected, String testName, String code) {
-        System.out.println(testName);
+        System.out.println();
+        System.out.println("expected " + expected + " lines. " + testName);
         System.out.println("\"\"\"\n" + code + "\n\"\"\"");
         System.out.println();
         LineCounter lineCounter = new LineCounter(code);
+        lineCounter.enableLogging();
         var actual = lineCounter.count();
         Assertions.assertEquals(expected, actual);
     }
@@ -45,53 +47,53 @@ class LineCounterTest {
                 i++;
                 i--;
                 """),
-            Arguments.arguments(2, "two lines, comments", """
+            Arguments.arguments(2, "comments", """
                 i++; // hello
                 //
                 i--;
                 """),
-            Arguments.arguments(2, "two lines, comments", """
+            Arguments.arguments(2, "comments", """
                 i++;
                 //
                 i--;
                 """),
-            Arguments.arguments(2, "two lines, multi-line comment", """
+            Arguments.arguments(2, "multi-line comment", """
                 i++;
                 /* */
                 i--;
                 """),
-            Arguments.arguments(2, "two lines, multi line comments", """
+            Arguments.arguments(2, "multi line comments", """
                 i++;
                 /* 
                 i==;
                 */
                 i--;
                 """),
-            Arguments.arguments(2, "two lines, string literal", """
+            Arguments.arguments(2, "string literal", """
                 i = "helo";
                 i--;
                 """),
-            Arguments.arguments(2, "two lines, comment starts on line with code", """
+            Arguments.arguments(2, "comment starts on line with code", """
                 i++; /* 
                 i==;
                 */
                 i--;
                 """),
-            Arguments.arguments(2, "two lines, code starts when multi-line comment ends", """
+            Arguments.arguments(2, "code starts when multi-line comment ends", """
                 i++;
                 /* 
                 i==;
                 */ j++;
                 """),
-            Arguments.arguments(2, "two lines, comments /* in string literal", """
+            Arguments.arguments(2, "comments /* in string literal", """
                 i = "hello /* hello";
                 i--;
                 """),
-            Arguments.arguments(2, "two lines, several multiling comments", """
+            Arguments.arguments(2, "several multiling comments", """
                 i = "hello"; /* hello */ i--; /* hello */
                 i--;
                 """),
-            Arguments.arguments(4, "two lines, divison on separate line", """
+            Arguments.arguments(4, "divison on separate line", """
                 i = 4
                 / 
                 2;
