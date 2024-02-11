@@ -132,9 +132,13 @@ class LineCounterTest {
                 """),
             Arguments.arguments(2, "multiplication after multiline comment", """
                 i = 4
-                /*/
+                /*
                 i++;
                  */* 2;
+                """),
+            Arguments.arguments(2, "multiplication after multiline comment", """
+                i = "\\\\";
+                i++;
                 """)
 
         );

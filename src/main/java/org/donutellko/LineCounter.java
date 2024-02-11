@@ -19,6 +19,7 @@ public class LineCounter {
     private boolean verboseLogging = false;
     private Integer multilineCommentStartPos = null;
     private Integer multilineCommentEndPos = null;
+    private Integer doubleBackslashEndPos = null;
 
     public LineCounter(String code) {
         this.code = code.toCharArray();
@@ -64,8 +65,16 @@ public class LineCounter {
                 case INSIDE_STRING_LITERAL -> {
                     if (isNewline()) {
                         throw new IllegalStateException();
+                    } else if (was(BACKSLASH) && is(BACKSLASH)) {
+                        if (canEscapeUsingBackslash()) {
+                            doubleBackslashEndPos = pos;
+                        }
                     } else if (was(BACKSLASH) && is(DOUBLE_QUOTE)) {
-                        break;
+                        if (canEscapeUsingBackslash()) {
+                            break;
+                        } else {
+                            setState(State.LINE_WITH_CODE);
+                        }
                     } else if (is(DOUBLE_QUOTE)) {
                         setState(State.LINE_WITH_CODE);
                     }
@@ -152,6 +161,11 @@ public class LineCounter {
         // for situation with /*/
         return multilineCommentStartPos == null
             || multilineCommentStartPos != pos - 1;
+    }
+
+    private boolean canEscapeUsingBackslash() {
+        return doubleBackslashEndPos == null
+            || doubleBackslashEndPos != pos - 1;
     }
 
     private boolean canStartSingleLineComment() {
