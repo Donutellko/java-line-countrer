@@ -17,6 +17,7 @@ public class LineCounter {
     private Character cur = null;
     private State state = State.LINE_BEGIN;
     private boolean verboseLogging = false;
+    private Integer commentStartPos = null;
 
     public LineCounter(String code) {
         this.code = code.toCharArray();
@@ -42,16 +43,16 @@ public class LineCounter {
                     } else if (isWhitespace()) {
                         break;
                     } else if (was(SLASH) && is(SLASH)) {
-                        state = State.INSIDE_SINGLE_LINE_COMMENT;
-                    } else if (was(SLASH) && is(STAR)){
-                        state = State.INSIDE_MULTI_LINE_COMMENT_NO_CODE_BEFORE;
+                        setState(State.INSIDE_SINGLE_LINE_COMMENT);
+                    } else if (was(SLASH) && is(STAR)) {
+                        setState(State.INSIDE_MULTI_LINE_COMMENT_NO_CODE_BEFORE);
                     } else if (is(SLASH)) {
-                        state = State.LINE_STARTS_WITH_SLASH;
+                        setState(State.LINE_STARTS_WITH_SLASH);
                     } else if (is(DOUBLE_QUOTE)) {
-                        state = State.INSIDE_STRING_LITERAL;
+                        setState(State.INSIDE_STRING_LITERAL);
                         count++;
                     } else {
-                        state = State.LINE_WITH_CODE;
+                        setState(State.LINE_WITH_CODE);
                         count++;
                     }
                 }
@@ -61,49 +62,53 @@ public class LineCounter {
                     } else if (was(BACKSLASH) && is(DOUBLE_QUOTE)) {
                         break;
                     } else if (is(DOUBLE_QUOTE)) {
-                        state = State.LINE_WITH_CODE;
+                        setState(State.LINE_WITH_CODE);
                     }
                 }
                 case LINE_WITH_CODE -> {
                     if (isNewline()) {
-                        state = State.LINE_BEGIN;
+                        setState(State.LINE_BEGIN);
                     } else if (was(SLASH) && is(SLASH)) {
-                        state = State.INSIDE_SINGLE_LINE_COMMENT;
-                    } else if(was(SLASH) && is(STAR)) {
-                        state = State.INSIDE_MULTI_LINE_COMMENT_WITH_CODE_BEFORE;
-                    } else if (was(SINGLE_QUOTE) && is(DOUBLE_QUOTE)){
+                        setState(State.INSIDE_SINGLE_LINE_COMMENT);
+                    } else if (was(SLASH) && is(STAR)) {
+                        setState(State.INSIDE_MULTI_LINE_COMMENT_WITH_CODE_BEFORE);
+                    } else if (was(SINGLE_QUOTE) && is(DOUBLE_QUOTE)) {
                         break;
                     } else if (is(DOUBLE_QUOTE)) {
-                        state = State.INSIDE_STRING_LITERAL;
+                        setState(State.INSIDE_STRING_LITERAL);
                     }
                 }
                 case INSIDE_SINGLE_LINE_COMMENT -> {
                     if (isNewline()) {
-                        state = State.LINE_BEGIN;
+                        setState(State.LINE_BEGIN);
                     }
                 }
                 case INSIDE_MULTI_LINE_COMMENT_NO_CODE_BEFORE -> {
                     if (was(STAR) && is(SLASH)) {
-                        state = State.LINE_BEGIN;
+                        if (commentStartPos < pos - 1) { // for situation with /*/
+                            setState(State.LINE_BEGIN);
+                        }
                     }
                 }
                 case INSIDE_MULTI_LINE_COMMENT_WITH_CODE_BEFORE -> {
                     if (isNewline()) {
-                        state = State.INSIDE_MULTI_LINE_COMMENT_NO_CODE_BEFORE;
+                        setState(State.INSIDE_MULTI_LINE_COMMENT_NO_CODE_BEFORE);
                     } else if (was(STAR) && is(SLASH)) {
-                        state = State.LINE_WITH_CODE;
+                        if (commentStartPos < pos - 1) { // for situation with /*/
+                            setState(State.LINE_WITH_CODE);
+                        }
                     }
                 }
                 case LINE_STARTS_WITH_SLASH -> {
                     if (isNewline()) {
                         count++;
-                        state = State.LINE_BEGIN;
+                        setState(State.LINE_BEGIN);
                     } else if (is(STAR)) {
-                        state = State.INSIDE_MULTI_LINE_COMMENT_NO_CODE_BEFORE;
+                        setState(State.INSIDE_MULTI_LINE_COMMENT_NO_CODE_BEFORE);
                     } else if (is(SLASH)) {
-                        state = State.INSIDE_SINGLE_LINE_COMMENT;
+                        setState(State.INSIDE_SINGLE_LINE_COMMENT);
                     } else {
-                        state = State.LINE_WITH_CODE;
+                        setState(State.LINE_WITH_CODE);
                     }
                 }
             }
@@ -112,6 +117,14 @@ public class LineCounter {
             }
         } while (next());
         return count;
+    }
+
+    private void setState(State state) {
+        if (state == State.INSIDE_MULTI_LINE_COMMENT_NO_CODE_BEFORE
+            || state == State.INSIDE_MULTI_LINE_COMMENT_WITH_CODE_BEFORE) {
+            commentStartPos = pos;
+        }
+        this.state = state;
     }
 
     private void print() {
@@ -123,7 +136,7 @@ public class LineCounter {
             return "null";
         }
         if (c == '\n') {
-            return  "\\n  ";
+            return "\\n  ";
         }
         return "'" + c + "' ";
     }

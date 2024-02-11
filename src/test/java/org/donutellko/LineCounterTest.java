@@ -104,6 +104,25 @@ class LineCounterTest {
                 int a = 25;
                 int b = 25;
                 // */
+                """),
+            Arguments.arguments(2, "/*/ inside single-ling comment", """
+                // /*/
+                i++;
+                // */
+                i--;
+                """),
+            Arguments.arguments(1, "multiline comment begins with /*/ ", """
+                /*/
+                int a = 25;
+                */
+                int b = 25;
+                """),
+            Arguments.arguments(2, "multiline comment ends with /*/ ", """
+                int a = 25;
+                /*/
+                *
+                /*/
+                int b = 25;
                 """)
 
         );
