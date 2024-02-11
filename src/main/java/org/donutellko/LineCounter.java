@@ -48,7 +48,9 @@ public class LineCounter {
                             setState(State.INSIDE_SINGLE_LINE_COMMENT);
                         }
                     } else if (was(SLASH) && is(STAR)) {
-                        setState(State.INSIDE_MULTI_LINE_COMMENT_NO_CODE_BEFORE);
+                        if (canStartMultilineComment()) {
+                            setState(State.INSIDE_MULTI_LINE_COMMENT_NO_CODE_BEFORE);
+                        }
                     } else if (is(SLASH)) {
                         setState(State.LINE_STARTS_WITH_SLASH);
                     } else if (is(DOUBLE_QUOTE)) {
@@ -76,7 +78,9 @@ public class LineCounter {
                             setState(State.INSIDE_SINGLE_LINE_COMMENT);
                         }
                     } else if (was(SLASH) && is(STAR)) {
-                        setState(State.INSIDE_MULTI_LINE_COMMENT_WITH_CODE_BEFORE);
+                        if (canStartMultilineComment()) {
+                            setState(State.INSIDE_MULTI_LINE_COMMENT_WITH_CODE_BEFORE);
+                        }
                     } else if (was(SINGLE_QUOTE) && is(DOUBLE_QUOTE)) {
                         break;
                     } else if (is(DOUBLE_QUOTE)) {
@@ -97,7 +101,9 @@ public class LineCounter {
                 }
                 case INSIDE_MULTI_LINE_COMMENT_WITH_CODE_BEFORE -> {
                     if (isNewline()) {
-                        setState(State.INSIDE_MULTI_LINE_COMMENT_NO_CODE_BEFORE);
+                        if (canStartMultilineComment()) {
+                            setState(State.INSIDE_MULTI_LINE_COMMENT_NO_CODE_BEFORE);
+                        }
                     } else if (was(STAR) && is(SLASH)) {
                         if (canEndMultilineComment()) { // for situation with /*/
                             setState(State.LINE_WITH_CODE);
@@ -109,7 +115,9 @@ public class LineCounter {
                         count++;
                         setState(State.LINE_BEGIN);
                     } else if (is(STAR)) {
-                        setState(State.INSIDE_MULTI_LINE_COMMENT_NO_CODE_BEFORE);
+                        if (canStartMultilineComment()) {
+                            setState(State.INSIDE_MULTI_LINE_COMMENT_NO_CODE_BEFORE);
+                        }
                     } else if (is(SLASH)) {
                         if (canStartSingleLineComment()) {
                             setState(State.INSIDE_SINGLE_LINE_COMMENT);
@@ -140,7 +148,6 @@ public class LineCounter {
         return state == State.INSIDE_MULTI_LINE_COMMENT_NO_CODE_BEFORE
             || state == State.INSIDE_MULTI_LINE_COMMENT_WITH_CODE_BEFORE;
     }
-
     private boolean canEndMultilineComment() {
         // for situation with /*/
         return multilineCommentStartPos == null
@@ -150,6 +157,12 @@ public class LineCounter {
     private boolean canStartSingleLineComment() {
         // for situation with i = 4 /* *// 2;
         System.out.printf("pos = %s, multilineCommentEndPos = %s %n", pos, multilineCommentEndPos);
+        return multilineCommentEndPos == null
+            || multilineCommentEndPos != pos - 1;
+    }
+
+    private boolean canStartMultilineComment() {
+        // for situation with */*
         return multilineCommentEndPos == null
             || multilineCommentEndPos != pos - 1;
     }
